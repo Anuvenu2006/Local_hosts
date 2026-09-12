@@ -2,50 +2,73 @@
 
 
 
-# [Project Name] 🎯
+# [Squirrel Thief] 🎯
 
 
 ## Basic Details
-### Team Name: [Name]
+### Team Name: [Local Host]
 
 
 ### Team Members
-- Team Lead: [Name] - [College]
-- Member 2: [Name] - [College]
-- Member 3: [Name] - [College]
+- Team Lead: [Shamna Shamsudeen] - [College of Engineering Trivandrum]
+- Member 2: [S V Anupama] - [College of Engineering Trivandrum]
+
 
 ### Project Description
-[2-3 lines about what your project does]
+We have a squirrel admin access to your desktop.He reads your file,decides which one matters most , wait until you look away and runs off with them. File management has never been this hostile
 
 ### The Problem (that doesn't exist)
-[What ridiculous problem are you solving?]
+Humans have a serious problem, They have too many files,They name it as final.pdf,professional_resume.pdf,They leave them unattended,They trust their computers.Nobody is stealing their files.This is unacceptable.
 
 ### The Solution (that nobody asked for)
-[How are you solving it? Keep it fun!]
+We hired a squirrel named Chip
 
-## Technical Details
-### Technologies/Components Used
-For Software:
-- [Languages used]
-- [Frameworks used]
-- [Libraries used]
-- [Tools used]
+Chip lives on your desktop, reads your files using AI, decides which ones look important, waits until you look away, and runs off with them into his burrow.
 
-For Hardware:
-- [List main components]
-- [List specifications]
-- [List tools required]
+You can watch his thought process. You can try to negotiate. You can even recover your files — if Chip lets you.
+
+File management has never been this hostile. And it has never been this cute
+
+### Technical Details
+
+**Software:**
+
+* **Languages:** Python, TypeScript, JavaScript, HTML, CSS
+* **Frameworks:** PySide6, React, Vite
+* **Libraries:** OpenCV, Watchdog, Sentence Transformers, PyTorch
+* **Tools:** VS Code, Git, GitHub, npm
+
+**Hardware:**
+
+* **Components:** Laptop/PC, Webcam
+* **Specifications:** Windows PC with webcam
+* **Tools required:** Keyboard, mouse, webcam
+
 
 ### Implementation
 For Software:
 # Installation
-[commands]
+git clone https://github.com/Anuvenu2006/Local_hosts.git
+cd Local_hosts
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+cd frontend
+npm install
 
 # Run
-[commands]
+cd ..
+python app/main.py
 
 ### Project Documentation
-For Software:
+Frontend: React + TypeScript + Vite
+Backend: Python + PySide6
+AI: Sentence Transformers for file-interest analysis
+File Monitoring: Watchdog
+Computer Vision: OpenCV + webcam
+Communication: REST API between Python backend and web frontend
+Storage: Local sandbox folders and JSON-based memory
+Version Control: Git + GitHub
 
 # Screenshots (Add at least 3)
 ![Screenshot1](Add screenshot 1 here with proper name)

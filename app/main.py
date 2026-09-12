@@ -1670,7 +1670,7 @@ def main():
         chip.pos()
     )
 
-    chip.show()
+    chip.hide()
 
     # ======================================
     # 📂 EXISTING FILES

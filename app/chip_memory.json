@@ -1,7 +1,7 @@
 {
-  "total_crimes": 27,
+  "total_crimes": 36,
   "stolen_categories": {
-    "TREASURE": 9,
-    "ACADEMIC": 18
+    "TREASURE": 12,
+    "ACADEMIC": 24
   }
 }
