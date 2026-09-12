@@ -36,13 +36,113 @@ class HumanDetector:
             5000
         )
 
-        # Open webcam
-        self.camera = cv2.VideoCapture(camera_index)
+        # ==========================================
+        # 📷 OPEN WINDOWS CAMERA
+        # ==========================================
+        #
+        # OpenCV uses Media Foundation (MSMF) by
+        # default on Windows. Your current logs show
+        # MSMF repeatedly failing to grab frames.
+        #
+        # DirectShow (DSHOW) is used first because it
+        # is often more reliable for webcams on Windows.
+        #
+        # ==========================================
 
-        if not self.camera.isOpened():
-            raise RuntimeError("Could not open webcam.")
+        print("📷 Opening Chip's webcam...")
 
-        print("📷 Chip's camera is ready!")
+        self.camera = None
+        self.backend_name = "UNKNOWN"
+
+        # Try DirectShow first.
+        dshow_camera = cv2.VideoCapture(
+            camera_index,
+            cv2.CAP_DSHOW
+        )
+
+        if dshow_camera.isOpened():
+
+            # A modest resolution is more reliable for
+            # face detection and reduces camera startup
+            # problems on some Windows webcams.
+            dshow_camera.set(
+                cv2.CAP_PROP_FRAME_WIDTH,
+                640
+            )
+            dshow_camera.set(
+                cv2.CAP_PROP_FRAME_HEIGHT,
+                480
+            )
+
+            # Keep only a small buffer so Chip reacts to
+            # the current camera view instead of old frames.
+            try:
+                dshow_camera.set(
+                    cv2.CAP_PROP_BUFFERSIZE,
+                    1
+                )
+            except Exception:
+                pass
+
+            # Verify that we can actually receive a frame.
+            success, frame = dshow_camera.read()
+
+            if success and frame is not None:
+
+                self.camera = dshow_camera
+                self.backend_name = "DirectShow"
+
+                print("📷 Chip's camera is ready!")
+                print("📷 Camera backend: DirectShow")
+                return
+
+            dshow_camera.release()
+
+        else:
+            dshow_camera.release()
+
+        # ==========================================
+        # 🔁 FALLBACK: MEDIA FOUNDATION
+        # ==========================================
+
+        print("⚠️ DirectShow could not provide a frame.")
+        print("🔁 Trying Media Foundation fallback...")
+
+        msmf_camera = cv2.VideoCapture(
+            camera_index,
+            cv2.CAP_MSMF
+        )
+
+        if msmf_camera.isOpened():
+
+            msmf_camera.set(
+                cv2.CAP_PROP_FRAME_WIDTH,
+                640
+            )
+            msmf_camera.set(
+                cv2.CAP_PROP_FRAME_HEIGHT,
+                480
+            )
+
+            success, frame = msmf_camera.read()
+
+            if success and frame is not None:
+
+                self.camera = msmf_camera
+                self.backend_name = "Media Foundation"
+
+                print("📷 Chip's camera is ready!")
+                print("📷 Camera backend: Media Foundation")
+                return
+
+            msmf_camera.release()
+
+        else:
+            msmf_camera.release()
+
+        raise RuntimeError(
+            "Could not open the webcam or receive a camera frame."
+        )
 
     def is_human_watching(self):
         """
@@ -54,9 +154,15 @@ class HumanDetector:
             False -> no human detected
         """
 
+        if self.camera is None:
+            return False
+
         success, frame = self.camera.read()
 
-        if not success:
+        if not success or frame is None:
+            # Do not print every failed frame.
+            # CameraWorker will simply treat this as
+            # no detected person for this cycle.
             return False
 
         # Mirror camera

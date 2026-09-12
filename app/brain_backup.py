@@ -634,8 +634,6 @@ def _semantic_classify(file_path):
 # 🧠 PUBLIC CLASSIFIER
 # ==========================================
 
-LAST_CLASSIFICATION = {"category": "NORMAL", "confidence": 0, "reaction": "", "base_score": 0}
-
 def classify_file(file_path, state=None):
 
     (
@@ -649,14 +647,6 @@ def classify_file(file_path, state=None):
         state.last_category = category
 
     data = CATEGORIES[category]
-
-    global LAST_CLASSIFICATION
-    LAST_CLASSIFICATION = {
-        "category": category,
-        "confidence": int(confidence),
-        "reaction": data["reaction"],
-        "base_score": int(data["base_score"]),
-    }
 
     return {
         "category": category,

@@ -1,0 +1,515 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
+
+:root {
+  color-scheme: dark;
+}
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  width: 100%;
+  margin: 0;
+}
+body {
+  background-color: #050b09;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+/* ---------- scene lighting (illustration lighting, not UI chrome) ---------- */
+.scene-sky {
+  background-color: #07110e;
+}
+.scene-moonglow {
+  background: radial-gradient(circle at center, rgba(246, 236, 210, 0.3) 0%, rgba(246, 236, 210, 0.08) 42%, rgba(246, 236, 210, 0) 70%);
+}
+.scene-vignette {
+  background: radial-gradient(120% 90% at 50% 42%, rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, 0.62) 100%);
+}
+.burrow-glow {
+  background: radial-gradient(circle at center, rgba(239, 180, 90, 0.42) 0%, rgba(239, 180, 90, 0.1) 55%, rgba(239, 180, 90, 0) 75%);
+}
+.desk-glow {
+  background: radial-gradient(circle at center, rgba(150, 210, 255, 0.24) 0%, rgba(150, 210, 255, 0.05) 55%, rgba(150, 210, 255, 0) 75%);
+}
+/* ---------- idle life ---------- */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.animate-twinkle {
+  animation: twinkle 4.5s ease-in-out infinite;
+}
+@keyframes moon-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+.animate-moon-breathe {
+  animation: moon-breathe 9s ease-in-out infinite;
+}
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+.animate-sway {
+  transform-origin: bottom center;
+  animation: sway 5.5s ease-in-out infinite;
+}
+@keyframes canopy-sway {
+  0%,
+  100% {
+    transform: rotate(-0.8deg) translateX(-2px);
+  }
+  50% {
+    transform: rotate(0.8deg) translateX(2px);
+  }
+}
+.animate-canopy {
+  transform-origin: bottom center;
+  animation: canopy-sway 12s ease-in-out infinite;
+}
+@keyframes firefly {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate3d(34px, -28px, 0);
+    opacity: 0.35;
+  }
+  75% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(-14px, -58px, 0);
+    opacity: 0;
+  }
+}
+.animate-firefly {
+  animation: firefly 9s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.025, 0.978);
+  }
+}
+.chip-breathe {
+  transform-origin: 50% 90%;
+  transform-box: fill-box;
+  animation: breathe 3.4s ease-in-out infinite;
+}
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95%,
+  97% {
+    transform: scaleY(0.08);
+  }
+}
+.chip-blink {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: blink 5.2s ease-in-out infinite;
+}
+@keyframes tail-flick {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+.chip-tail {
+  transform-origin: 30% 90%;
+  transform-box: fill-box;
+  animation: tail-flick 4.2s ease-in-out infinite;
+}
+@keyframes sniff {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(-1.5px, 1px) rotate(-5deg);
+  }
+}
+.chip-sniff {
+  transform-origin: 60% 80%;
+  transform-box: fill-box;
+  animation: sniff 0.9s ease-in-out infinite;
+}
+@keyframes scanline {
+  0% {
+    transform: translateY(-10%);
+  }
+  100% {
+    transform: translateY(110%);
+  }
+}
+.animate-scanline {
+  animation: scanline 4s linear infinite;
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(111, 174, 92, 0.5);
+  }
+  70% {
+    opacity: 0.85;
+    box-shadow: 0 0 0 8px rgba(111, 174, 92, 0);
+  }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 2.2s ease-out infinite;
+}
+@keyframes grass-tick {
+  0%,
+  100% {
+    transform: skewX(-4deg);
+  }
+  50% {
+    transform: skewX(4deg);
+  }
+}
+.animate-grass {
+  transform-origin: bottom center;
+  animation: grass-tick 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-twinkle,
+  .animate-moon-breathe,
+  .animate-sway,
+  .animate-canopy,
+  .animate-firefly,
+  .chip-breathe,
+  .chip-blink,
+  .chip-tail,
+  .chip-sniff,
+  .animate-scanline,
+  .animate-pulse-dot,
+  .animate-grass {
+    animation: none !important;
+  }
+}
+/* thin scrollbars inside panels */
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(143, 196, 122, 0.22);
+  border-radius: 999px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+/* ==========================================================
+   TASK 3A — SCENE-FIRST CHIP ENVIRONMENT
+   The forest is the product. UI is only a thin HUD over it.
+   ========================================================== */
+.chip-app {
+  min-height: 100vh;
+  isolation: isolate;
+}
+.scene-header {
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(3, 9, 7, 0.78) 0%, rgba(3, 9, 7, 0.24) 62%, transparent 100%);
+  min-height: 112px;
+}
+.scene-brand,
+.scene-statuses {
+  pointer-events: auto;
+}
+.scene-brand-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-shadow: 0 2px 20px rgba(0,0,0,.55);
+}
+.scene-brand-chip {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(22px, 2.1vw, 31px);
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+.scene-brand-divider {
+  color: rgba(232,220,194,.32);
+}
+.scene-brand-thief {
+  color: #efb45a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(9px, .8vw, 12px);
+  font-weight: 500;
+  letter-spacing: .18em;
+}
+.scene-brand-tagline {
+  margin-top: 5px;
+  color: rgba(232,220,194,.68);
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+.scene-statuses {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.scene-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(232,220,194,.14);
+  border-radius: 999px;
+  background: rgba(4, 13, 10, .62);
+  color: rgba(232,220,194,.78);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 30px rgba(0,0,0,.14);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .1em;
+}
+.scene-status-pill.is-active {
+  border-color: rgba(143,196,122,.32);
+}
+.scene-status-pill.is-active .status-icon,
+.scene-status-pill.is-active .status-value {
+  color: #8fc47a;
+}
+.scene-status-pill.is-off {
+  border-color: rgba(228,105,93,.28);
+}
+.scene-status-pill.is-off .status-icon,
+.scene-status-pill.is-off .status-value {
+  color: #e4695d;
+}
+.scene-status-pill.is-paused {
+  border-color: rgba(239,180,90,.34);
+}
+.scene-status-pill.is-paused .status-icon,
+.scene-status-pill.is-paused .status-value {
+  color: #efb45a;
+}
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+}
+.status-label {
+  color: rgba(232,220,194,.42);
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #8fc47a;
+  box-shadow: 0 0 0 4px rgba(143,196,122,.1);
+  animation: pulse-dot 2.2s ease-out infinite;
+}
+.chip-controls-overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  z-index: 50;
+  width: min(calc(100% - 32px), 900px);
+  transform: translateX(-50%);
+}
+.chip-controls-overlay nav {
+  width: 100%;
+  justify-content: center;
+  border-color: rgba(232,220,194,.13);
+  background: rgba(4, 13, 10, .64);
+  box-shadow: 0 18px 50px rgba(0,0,0,.35);
+}
+.scene-credit {
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .scene-header {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .scene-brand-tagline,
+  .status-label {
+    display: none;
+  }
+  .scene-status-pill {
+    min-height: 30px;
+    padding: 0 9px;
+  }
+  .scene-brand-thief,
+  .scene-brand-divider {
+    display: none;
+  }
+  .scene-brand-chip {
+    font-size: 21px;
+  }
+  .chip-controls-overlay {
+    bottom: 14px;
+    width: calc(100% - 20px);
+  }
+  .chip-controls-overlay nav {
+    gap: 5px;
+    padding: 7px;
+  }
+  .chip-controls-overlay nav button {
+    padding-left: 9px;
+    padding-right: 9px;
+    font-size: 10px;
+  }
+  .scene-credit {
+    display: none;
+  }
+}
+/* ==========================================================
+   TASK 3A — MINIMAL SCENE CONTROLS
+   ========================================================== */
+
+.scene-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  width: fit-content;
+  margin: 0 auto;
+
+  padding: 7px;
+
+  border: 1px solid rgba(232, 220, 194, 0.13);
+  border-radius: 18px;
+
+  background: rgba(4, 13, 10, 0.68);
+
+  backdrop-filter: blur(18px);
+
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+
+.scene-control-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 34px;
+
+  padding: 0 13px;
+
+  border: 1px solid rgba(232, 220, 194, 0.12);
+  border-radius: 12px;
+
+  background: rgba(10, 27, 21, 0.75);
+
+  color: rgba(232, 220, 194, 0.78);
+
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+
+  letter-spacing: 0.08em;
+
+  cursor: pointer;
+
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+
+.scene-control-button:hover {
+  background: rgba(25, 51, 39, 0.9);
+
+  border-color: rgba(143, 196, 122, 0.35);
+
+  color: #8fc47a;
+
+  transform: translateY(-1px);
+}
+
+
+.scene-control-button:active {
+  transform: translateY(0);
+}
+
+
+.scene-control-button.is-paused {
+  border-color: rgba(239, 180, 90, 0.35);
+
+  color: #efb45a;
+}
+
+
+.scene-control-button.is-paused:hover {
+  background: rgba(60, 42, 20, 0.75);
+
+  border-color: rgba(239, 180, 90, 0.55);
+
+  color: #efb45a;
+}
+
+
+/* Mobile */
+
+@media (max-width: 600px) {
+
+  .scene-control-bar {
+    width: calc(100vw - 24px);
+
+    justify-content: center;
+  }
+
+  .scene-control-button {
+    flex: 1;
+
+    padding: 0 8px;
+
+    font-size: 8px;
+  }
+
+}

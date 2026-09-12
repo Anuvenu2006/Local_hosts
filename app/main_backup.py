@@ -4,11 +4,7 @@
 # ==========================================
 
 import sys
-import brain
 import shutil
-import subprocess
-import webbrowser
-import socket
 from pathlib import Path
 from queue import Queue, Empty
 from datetime import datetime
@@ -27,7 +23,6 @@ from watcher import start_watching
 from squirrel_gui import SquirrelWindow
 from camera_worker import CameraWorker
 from chip_life import ChipLife
-from api_server import start_server
 
 
 # ==========================================
@@ -97,19 +92,6 @@ camera_worker = None
 # Remembers the previous camera state
 # so Chip only reacts when the state changes.
 last_watching_state = None
-
-# 🌐 Live data exposed to the Magic Patterns frontend
-current_analysis = {
-    "target": "",
-    "score": 0,
-    "reasons": [],
-    "category": "BORING",
-    "confidence": 0,
-}
-ui_paused = False
-ui_events = []
-ui_last_state = None
-ui_last_crime_count = 0
 
 
 # ==========================================
@@ -428,160 +410,6 @@ def print_crime_report(
 
 
 # ==========================================
-# 🌐 MAGIC PATTERNS BRIDGE
-# ==========================================
-
-def _ui_category(category):
-    mapping = {
-        "SECRET": "SECRET",
-        "TREASURE": "SECRET",
-        "DANGEROUS": "SECRET",
-        "ACADEMIC": "ACADEMIC",
-        "PERSONAL": "PERSONAL",
-        "FINANCIAL": "FINANCIAL",
-        "MEDIA": "BORING",
-        "JUNK": "BORING",
-        "NORMAL": "BORING",
-    }
-    return mapping.get(str(category or "NORMAL").upper(), "BORING")
-
-
-def build_ui_snapshot():
-    """Return only JSON-safe, presentation-oriented Chip state."""
-    state = chip_life.state.value
-    state_map = {"looking_around": "idle", "frozen": "watched"}
-    state = state_map.get(state, state)
-
-    global ui_last_state, ui_last_crime_count
-    if state != ui_last_state:
-        ui_events.append({
-            "id": f"state-{datetime.now().timestamp()}",
-            "time": datetime.now().strftime("%H:%M:%S"),
-            "message": f"Chip entered {state.upper()} state",
-            "tone": "alert" if state == "watched" else ("crime" if state in ("stealing", "escaping") else "neutral"),
-        })
-        ui_last_state = state
-    if len(crime_history) != ui_last_crime_count:
-        if crime_history:
-            latest = crime_history[-1]
-            ui_events.append({
-                "id": f"crime-{latest['crime_number']}",
-                "time": latest["time"],
-                "message": f"FILE STOLEN: {latest['file']}",
-                "tone": "crime",
-            })
-        ui_last_crime_count = len(crime_history)
-    del ui_events[:-40]
-
-    camera_active = False
-    watching = False
-    if camera_worker is not None:
-        camera_active = True
-        try:
-            watching = bool(camera_worker.is_watching())
-        except Exception:
-            watching = False
-
-    files = []
-    if BURROW.exists():
-        for item in sorted(BURROW.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
-            if item.is_file():
-                try:
-                    size = item.stat().st_size
-                    size_text = f"{size / 1024:.1f} KB" if size < 1024 * 1024 else f"{size / (1024 * 1024):.1f} MB"
-                except OSError:
-                    size_text = "unknown"
-                files.append({
-                    "id": item.name,
-                    "name": item.name,
-                    "category": _ui_category(chip_state.last_category),
-                    "size": size_text,
-                })
-
-    crimes = []
-    for r in reversed(crime_history[-14:]):
-        crimes.append({
-            "id": r["crime_number"],
-            "fileName": r["file"],
-            "category": _ui_category(chip_state.last_category),
-            "interest": int(r["score"]),
-            "status": "STOLEN" if r.get("status") == "ESCAPED" else "ABORTED",
-            "time": r["time"],
-        })
-
-    # ======================================
-    # 🎯 ONLY SHOW A LIVE TARGET
-    # ======================================
-    #
-    # current_analysis remembers the last file Chip
-    # looked at. That does NOT mean the file is still
-    # in the playground.
-    #
-    # The web UI must never show a stale target after
-    # the file has already been moved into the burrow.
-    #
-    active_target = str(current_analysis.get("target", "") or "").strip()
-
-    if active_target:
-        target_path = PLAYGROUND / active_target
-        burrow_path = BURROW / active_target
-
-        if (
-            not target_path.exists()
-            or not target_path.is_file()
-            or burrow_path.exists()
-        ):
-            active_target = ""
-
-            # Clear stale analysis as well, so the next
-            # snapshot starts clean.
-            current_analysis["target"] = ""
-            current_analysis["score"] = 0
-            current_analysis["reasons"] = []
-            current_analysis["category"] = "BORING"
-            current_analysis["confidence"] = 0
-
-    thought_text = chip_life.current_thought or chip_state.current_thought
-    return {
-        "state": state,
-        "paused": ui_paused,
-        "thought": {
-            "text": thought_text,
-            "interest": int(current_analysis.get("score", 0)),
-            "category": current_analysis.get("category", _ui_category(chip_state.last_category)),
-            "confidence": int(current_analysis.get("confidence", 0)),
-            "reason": "; ".join(current_analysis.get("reasons", [])) or "Chip is deciding whether the file is worth stealing.",
-            "target": active_target,
-        },
-        "stats": {
-            "filesStolen": len(files),
-            "crimesCommitted": int(chip_state.crimes),
-            "mischief": int(chip_state.mischief),
-            "greed": int(chip_state.greed),
-            "suspicion": int(chip_state.suspicion),
-        },
-        "crimes": crimes,
-        "stolenFiles": files,
-        "events": list(reversed(ui_events[-40:])),
-        "cameraActive": camera_active,
-        "watcherActive": True,
-    }
-
-
-def handle_ui_command(command):
-    global ui_paused
-    kind = command.get("type")
-    if kind == "pause":
-        ui_paused = True
-    elif kind == "resume":
-        ui_paused = False
-    elif kind == "set_camera":
-        # Camera is controlled by the physical camera worker for now.
-        pass
-    return {"ok": True, "paused": ui_paused}
-
-
-# ==========================================
 # 👀 CAMERA AWARENESS
 # ==========================================
 
@@ -752,14 +580,9 @@ def analyze_file(
 
         except Exception as error:
 
-            # FAIL CLOSED: if camera state is unknown,
-            # Chip must not continue toward theft.
             print(
                 f"📷 Camera check failed: {error}"
             )
-
-            file_queue.put(file_path)
-            return
 
 
     # ======================================
@@ -826,13 +649,6 @@ def analyze_file(
         file_path,
         chip_state
     )
-
-    # 🌐 Publish the latest analysis to the web UI.
-    current_analysis["target"] = file_path.name
-    current_analysis["score"] = int(score)
-    current_analysis["reasons"] = list(reasons)
-    current_analysis["category"] = _ui_category(chip_state.last_category)
-    current_analysis["confidence"] = int(brain.LAST_CLASSIFICATION.get("confidence", 0))
 
     chip_state.update_thought()
 
@@ -1031,60 +847,6 @@ def steal_sequence(
         return
 
     # ======================================
-    # 👀 FINAL CAMERA CHECK
-    # ======================================
-    # Chip may have started analyzing the file
-    # while the human was looking away.
-    #
-    # Before beginning the theft, check again.
-    # If the human is watching, Chip aborts the
-    # heist and waits for another opportunity.
-
-    if camera_worker is not None:
-
-        try:
-
-            if camera_worker.is_watching():
-
-                print()
-                print("👀 CHIP: HUMAN DETECTED!")
-                print("🧊 CHIP FREEZES!")
-                print("🐿️ CHIP: I WAS JUST LOOKING...")
-
-                chip_life.human_is_watching()
-
-                chip.set_message(
-                    "I WAS JUST LOOKING... 👀"
-                )
-
-                finish_heist()
-
-                # Keep the file available for another attempt.
-                QTimer.singleShot(
-                    1500,
-                    lambda: queue_file(file_path)
-                )
-
-                return
-
-        except Exception as error:
-
-            # FAIL CLOSED: never begin the attack when
-            # camera state cannot be determined.
-            print(
-                f"📷 Camera check failed before attack: {error}"
-            )
-
-            finish_heist()
-
-            QTimer.singleShot(
-                1500,
-                lambda: queue_file(file_path)
-            )
-
-            return
-
-    # ======================================
     # ATTACK
     # ======================================
 
@@ -1105,9 +867,6 @@ def steal_sequence(
     # ======================================
     # 🌰 STEAL AFTER ATTACK
     # ======================================
-    # There is another camera check inside
-    # perform_steal() because the human can
-    # look back during this 900 ms animation.
 
     QTimer.singleShot(
         900,
@@ -1148,78 +907,12 @@ def perform_steal(
         return
 
     # ======================================
-    # 👀 LAST-SECOND CAMERA CHECK
-    # ======================================
-    # The human can look back while Chip is
-    # performing the attack animation. Never
-    # move the file if the human is watching.
-
-    if camera_worker is not None:
-
-        try:
-
-            if camera_worker.is_watching():
-
-                print()
-                print("👀 CHIP: YOU LOOKED BACK!")
-                print("🧊 CHIP FREEZES MID-HEIST!")
-                print("🐿️ CHIP: NOTHING HAPPENED. 😇")
-
-                chip_life.human_is_watching()
-
-                chip.set_message(
-                    "NOTHING HAPPENED... 😇"
-                )
-
-                finish_heist()
-
-                # Retry later when the human looks away.
-                QTimer.singleShot(
-                    1500,
-                    lambda: queue_file(file_path)
-                )
-
-                return
-
-        except Exception as error:
-
-            # FAIL CLOSED: the actual file move is the
-            # final dangerous action. Unknown camera state
-            # means Chip must not steal.
-            print(
-                f"📷 Final camera check failed: {error}"
-            )
-
-            finish_heist()
-
-            QTimer.singleShot(
-                1500,
-                lambda: queue_file(file_path)
-            )
-
-            return
-
-    # ======================================
     # 🌰 STEAL
     # ======================================
 
     success = steal_file(
         file_path
     )
-
-    # ======================================
-    # 🎯 CLEAR LIVE TARGET AFTER THEFT
-    # ======================================
-    #
-    # The file has left playground and is now in burrow.
-    # It must no longer appear as the current watched file.
-    #
-    if success:
-        current_analysis["target"] = ""
-        current_analysis["score"] = 0
-        current_analysis["reasons"] = []
-        current_analysis["category"] = "BORING"
-        current_analysis["confidence"] = 0
 
     # ======================================
     # ❌ FAILED
@@ -1356,21 +1049,6 @@ def process_queue(
 ):
 
     # ======================================
-    # 🌲 WAIT FOR BROWSER UI
-    # ======================================
-    #
-    # This MUST be the first gate. calculate_interest()
-    # can load/run the semantic model and temporarily block
-    # the Qt event loop. Without this gate, Chip can start
-    # working before the browser is visible.
-    #
-    if not frontend_ready:
-        return
-
-    if ui_paused:
-        return
-
-    # ======================================
     # 🚨 EXISTING HEIST
     # ======================================
 
@@ -1423,164 +1101,6 @@ def process_queue(
         file_path,
         chip
     )
-
-
-# ==========================================
-# 🌲 MAGIC PATTERNS FRONTEND
-# ==========================================
-
-frontend_process = None
-
-# Chip must wait until the browser UI has been launched.
-# This prevents the file queue from starting semantic analysis
-# before the visual environment is ready.
-frontend_ready = False
-
-
-def _frontend_is_ready():
-    """Check whether Vite is accepting connections on port 5173."""
-    try:
-        with socket.create_connection(("127.0.0.1", 5173), timeout=0.25):
-            return True
-    except OSError:
-        return False
-
-
-def start_frontend():
-    """
-    Start Magic Patterns and open the browser only after Vite is ready.
-
-    frontend_ready remains False until the browser is launched.
-    """
-    global frontend_process, frontend_ready
-
-    frontend_ready = False
-
-    frontend_dir = BASE_DIR / "frontend"
-
-    if not frontend_dir.exists():
-        print()
-        print("⚠️ Magic Patterns frontend folder not found:")
-        print(f"   {frontend_dir}")
-        print("⚠️ Continuing without browser UI.")
-        frontend_ready = True
-        return
-
-    print()
-    print("🌲 STARTING MAGIC PATTERNS ENVIRONMENT...")
-
-    def open_frontend():
-        global frontend_ready
-
-        try:
-            webbrowser.open("http://127.0.0.1:5173")
-            print("🌐 Chip's environment opened in your browser.")
-            frontend_ready = True
-        except Exception as error:
-            print(f"⚠️ Could not open Chip's browser UI: {error}")
-            frontend_ready = False
-
-    if _frontend_is_ready():
-        print("🌲 Magic Patterns is already running on port 5173.")
-        print("⏳ Opening Chip's environment...")
-        QTimer.singleShot(250, open_frontend)
-        return
-
-    try:
-        frontend_process = subprocess.Popen(
-            [
-                "npm.cmd",
-                "run",
-                "dev",
-                "--",
-                "--host",
-                "127.0.0.1",
-                "--port",
-                "5173",
-                "--strictPort",
-            ],
-            cwd=str(frontend_dir),
-            shell=False,
-            creationflags=getattr(
-                subprocess,
-                "CREATE_NEW_PROCESS_GROUP",
-                0,
-            ),
-        )
-
-        print("🌲 Magic Patterns server starting...")
-        print("⏳ Waiting for the Chip environment...")
-
-        def wait_for_frontend():
-            if _frontend_is_ready():
-                open_frontend()
-                return
-
-            if (
-                frontend_process is not None
-                and frontend_process.poll() is not None
-            ):
-                print()
-                print(
-                    "⚠️ Magic Patterns server stopped "
-                    "before it became ready."
-                )
-                print(
-                    f"   Exit code: {frontend_process.returncode}"
-                )
-                return
-
-            QTimer.singleShot(250, wait_for_frontend)
-
-        QTimer.singleShot(250, wait_for_frontend)
-
-    except FileNotFoundError:
-        print()
-        print("❌ npm was not found.")
-        print(
-            "   Make sure Node.js/npm is installed "
-            "and available in PATH."
-        )
-
-    except Exception as error:
-        print()
-        print(f"⚠️ Could not start Magic Patterns: {error}")
-
-
-def stop_frontend():
-    """Stop the Vite process started by Chip."""
-    global frontend_process
-
-    if frontend_process is None:
-        return
-
-    try:
-        if frontend_process.poll() is None:
-            print()
-            print("🌲 STOPPING MAGIC PATTERNS ENVIRONMENT...")
-
-            # On Windows, terminate the npm process tree.
-            if sys.platform.startswith("win"):
-                subprocess.run(
-                    [
-                        "taskkill",
-                        "/PID",
-                        str(frontend_process.pid),
-                        "/T",
-                        "/F",
-                    ],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    check=False,
-                )
-            else:
-                frontend_process.terminate()
-
-    except Exception as error:
-        print(f"⚠️ Frontend stop error: {error}")
-
-    finally:
-        frontend_process = None
 
 
 # ==========================================
@@ -1726,21 +1246,6 @@ def main():
         )
 
     # ======================================
-    # 🌐 START MAGIC PATTERNS BRIDGE
-    # ======================================
-    api_server = start_server(
-        build_ui_snapshot,
-        handle_ui_command,
-        host="127.0.0.1",
-        port=8000,
-    )
-
-    # ======================================
-    # 🌲 START MAGIC PATTERNS UI
-    # ======================================
-    start_frontend()
-
-    # ======================================
     # ⏱️ FILE QUEUE TIMER
     # ======================================
 
@@ -1782,8 +1287,6 @@ def main():
     life_timer = QTimer()
 
     def update_chip_life():
-        if ui_paused:
-            return
         if heist_in_progress:
             return
 
@@ -1836,16 +1339,6 @@ def main():
         exit_code = app.exec()
 
     finally:
-
-        # ==================================
-        # 🛑 STOP MAGIC PATTERNS FRONTEND
-        # ==================================
-        stop_frontend()
-
-        try:
-            api_server.shutdown()
-        except Exception:
-            pass
 
         # ==================================
         # 🛑 STOP FILE WATCHER
